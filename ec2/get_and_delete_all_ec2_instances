@@ -1,0 +1,104 @@
+from pprint import pprint
+import boto3
+from botocore.exceptions import ClientError
+
+lab_regions = [
+    "us-west-1",
+    "us-west-2",
+    "ca-central-1",
+    "eu-central-1",
+    "eu-west-1",
+    "eu-west-2",
+    "eu-west-3",
+    "eu-north-1",
+    "eu-south-1",
+    "ap-northeast-1",
+    "ap-northeast-2",
+    "ap-northeast-3",
+    "ap-southeast-1",
+    "ap-southeast-2",
+    "sa-east-1"
+]
+
+
+# Stop the ec2 instances based on region
+def stop_instances():
+
+    for region in lab_regions:
+
+        ec2client = boto3.client('ec2',region_name=region)
+        # response = ec2client.describe_instances()
+
+        instance_ids = get_all_running_ec2_ids()
+
+        for instance_id in instance_ids:
+            # Do a dryrun first to verify permissions
+            try:
+                ec2client.stop_instances(InstanceIds=[instance_id], DryRun=True)
+            except ClientError as e:
+                if 'DryRunOperation' not in str(e):
+                    raise
+            # Dry run succeeded, call stop_instances without dryrun
+            try:
+                response = ec2client.stop_instances(InstanceIds=[instance_id], DryRun=False)
+                pprint(response)
+            except ClientError as e:
+                pprint(e)
+
+
+# terminate the ec2 instances based on region
+def terminate_instances():
+
+    for region in lab_regions:
+
+        ec2client = boto3.client('ec2',region_name=region)
+        # response = ec2client.describe_instances()
+
+        instance_ids = get_all_running_ec2_ids()
+
+        for instance_id in instance_ids:
+            # Do a dryrun first to verify permissions
+            try:
+                ec2client.terminate_instances(InstanceIds=[instance_id], DryRun=True)
+            except ClientError as e:
+                if 'DryRunOperation' not in str(e):
+                    raise
+            # Dry run succeeded, call stop_instances without dryrun
+            try:
+                response = ec2client.terminate_instances(InstanceIds=[instance_id], DryRun=False)
+                pprint(response)
+            except ClientError as e:
+                pprint(e)
+
+
+# get the list of all the running ec2 instances
+def get_all_running_ec2_ids():
+    response = ec2client.describe_instances(DryRun=False)
+    instance_ids = []
+    for reservation in response["Reservations"]:
+        for instance in reservation["Instances"]:
+            # This sample print will output entire Dictionary object
+            # This will print will output the value of the Dictionary key 'InstanceId'
+            if (instance['State']['Name'] == 'running'):
+                instance_id = (instance["InstanceId"])
+                pprint(instance_id)
+                instance_ids.append(instance_id)
+    return instance_ids
+
+
+# get the list of all the stopped ec2 instances
+def get_all_running_ec2_ids():
+    response = ec2client.describe_instances(DryRun=False)
+    instance_ids = []
+    for reservation in response["Reservations"]:
+        for instance in reservation["Instances"]:
+            # This sample print will output entire Dictionary object
+            # This will print will output the value of the Dictionary key 'InstanceId'
+            if (instance['State']['Name'] == 'stopped'):
+                instance_id = (instance["InstanceId"])
+                pprint(instance_id)
+                instance_ids.append(instance_id)
+    return instance_ids 
+
+
+
